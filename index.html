@@ -1,60 +1,88 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Cryptocurrency Trend Monitor</title>
+  <title>Cryptocurrency Market Monitor</title>
   <style>
+    /* Add your CSS styles here */
     body {
       font-family: Arial, sans-serif;
     }
 
-    h1 {
-      text-align: center;
-    }
-
-    #result {
-      margin-top: 20px;
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
       padding: 20px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      background-color: #f9f9f9;
     }
 
-    p {
-      margin: 10px 0;
+    .title {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .price {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+
+    .time {
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+
+    .trend {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+
+    .fibonacci {
+      font-size: 16px;
+      margin-top: 20px;
     }
   </style>
 </head>
 <body>
-  <h1>Cryptocurrency Trend Monitor</h1>
-  <div id="result"></div>
+  <div class="container">
+    <div class="title">Cryptocurrency Market Monitor</div>
+    <div class="price">Latest Price: <span id="latest-price"></span> TUSD</div>
+    <div class="time">Latest Time: <span id="latest-time"></span></div>
+    <div class="trend">Trend Detected: <span id="trend"></span></div>
+    <div class="fibonacci">
+      Fibonacci Retracement Levels:<br>
+      <span id="fib-levels"></span>
+    </div>
+  </div>
 
   <script>
+    // Define the Binance API endpoints
     const BASE_URL = 'https://api.binance.com/api/v3';
     const KLINE_ENDPOINT = `${BASE_URL}/klines`;
 
+    // Define the Binance symbol
     const symbol = 'BTCTUSD';
+
+    // Define the moving average periods
     const maPeriods = [7, 25, 99];
 
-    const BUY_SOUND_PATH = './buy.mp3';
-    const SELL_SOUND_PATH = './sell.mp3';
-    const RANGE_SOUND_PATH = './range.mp3';
+    // Define the audio files for different trends
+    const audioFiles = {
+      'Upward trend': './buy.mp3',
+      'Range': './range.mp3',
+      'Downward trend': './sell.mp3'
+    };
 
     function calculateMovingAverage(data, period) {
       if (data.length >= period) {
-        const sum = data.slice(-period).reduce((acc, curr) => acc + curr, 0);
-        return sum / period;
+        return data.slice(-period).reduce((sum, value) => sum + value, 0) / period;
       } else {
         return null;
       }
     }
 
     function detectTrend(movingAverages) {
-      const increasing = movingAverages.every((value, index, array) => index === 0 || value > array[index - 1]);
-      const decreasing = movingAverages.every((value, index, array) => index === 0 || value < array[index - 1]);
-
-      if (increasing) {
+      if (movingAverages.every((value, i, arr) => i === 0 || value > arr[i - 1])) {
         return 'Upward trend';
-      } else if (decreasing) {
+      } else if (movingAverages.every((value, i, arr) => i === 0 || value < arr[i - 1])) {
         return 'Downward trend';
       } else {
         return 'Range';
@@ -63,10 +91,11 @@
 
     function calculateFibonacciLevels(high, low) {
       const levels = [];
-      const diff = high - low;
 
       levels.push(high);
       levels.push(low);
+
+      const diff = high - low;
 
       const ratios = [0.236, 0.382, 0.5, 0.618, 0.786];
       for (const ratio of ratios) {
@@ -78,59 +107,69 @@
     }
 
     async function fetchOHLCVData(symbol, interval, limit) {
-      const url = new URL(KLINE_ENDPOINT);
-      url.searchParams.append('symbol', symbol);
-      url.searchParams.append('interval', interval);
-      url.searchParams.append('limit', limit);
-
+      const url = `${KLINE_ENDPOINT}?symbol=${symbol}&interval=${interval}&limit=${limit}`;
       const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error('Failed to fetch OHLCV data');
-      }
-
       const data = await response.json();
       return data;
     }
 
-    function playSound(soundPath) {
-      const audio = new Audio(soundPath);
-      audio.play().catch(error => {
-        console.error('Failed to play sound:', error);
-      });
+    function updateMarketData() {
+      fetchOHLCVData(symbol, '1m', Math.max(...maPeriods))
+        .then(data => {
+          // Extract closing prices
+          const closingPrices = data.map(item => parseFloat(item[4]));
+
+          // Calculate moving averages
+          const movingAverages = maPeriods.map(period => calculateMovingAverage(closingPrices, period));
+
+          // Detect trend
+          const trend = detectTrend(movingAverages);
+
+          // Get the latest price and time
+          const latestPrice = closingPrices[closingPrices.length - 1].toFixed(2);
+          const latestTime = new Date(data[data.length - 1][0]).toLocaleString();
+
+          // Update the HTML elements
+          document.getElementById('latest-price').textContent = latestPrice;
+          document.getElementById('latest-time').textContent = latestTime;
+          document.getElementById('trend').textContent = trend;
+
+          // Play sound based on trend
+          if (trend in audioFiles) {
+            const audio = new Audio(audioFiles[trend]);
+            audio.play();
+          }
+
+          // Calculate Fibonacci retracement levels for upward or downward trends
+          if (trend === 'Upward trend' || trend === 'Downward trend') {
+            const high = Math.max(...closingPrices);
+            const low = Math.min(...closingPrices);
+            const fibonacciLevels = calculateFibonacciLevels(high, low);
+
+            let html = '';
+            for (let i = 0; i < fibonacciLevels.length; i++) {
+              const level = fibonacciLevels[i].toFixed(2);
+              html += `Level ${i + 1}: ${level}`;
+              if ((trend === 'Upward trend' && level >= latestPrice) || (trend === 'Downward trend' && level <= latestPrice)) {
+                html += ` (Market price is within Level ${i + 1})`;
+              }
+              html += '<br>';
+            }
+            document.getElementById('fib-levels').innerHTML = html;
+          } else {
+            document.getElementById('fib-levels').textContent = '';
+          }
+        })
+        .catch(error => {
+          console.error('An error occurred:', error);
+        });
     }
 
-    async function monitorMarket() {
-      try {
-        const data = await fetchOHLCVData(symbol, '1m', Math.max(...maPeriods));
+    // Call the updateMarketData function initially
+    updateMarketData();
 
-        const closingPrices = data.map(item => parseFloat(item[4]));
-        const movingAverages = maPeriods.map(period => calculateMovingAverage(closingPrices, period));
-
-        const trend = detectTrend(movingAverages);
-        const latestPrice = closingPrices[closingPrices.length - 1];
-        const latestTime = new Date(data[data.length - 1][0]).toLocaleString();
-
-        const resultDiv = document.getElementById('result');
-        resultDiv.innerHTML = `
-          <p>Currency Pair: ${symbol}</p>
-          <p>Latest Price: ${latestPrice} TUSD</p>
-          <p>Latest Time: ${latestTime}</p>
-          <p>Trend Detected: ${trend}</p>
-        `;
-
-        if (trend === 'Upward trend') {
-          playSound(BUY_SOUND_PATH);
-        } else if (trend === 'Downward trend') {
-          playSound(SELL_SOUND_PATH);
-        } else if (trend === 'Range') {
-          playSound(RANGE_SOUND_PATH);
-        }
-      } catch (error) {
-        console.error('An error occurred:', error.message);
-      }
-    }
-
-    setInterval(monitorMarket, 60000); // Run every 1 minute
+    // Call the updateMarketData function every minute
+    setInterval(updateMarketData, 60000);
   </script>
 </body>
 </html>
