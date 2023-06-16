@@ -1,12 +1,13 @@
 # Cryptocurrency Trend Monitor
 
-The Cryptocurrency Trend Monitor is a web-based script that fetches OHLCV (Open, High, Low, Close, Volume) data from the Binance API and analyzes the trend of a specified cryptocurrency pair. It calculates moving averages and detects whether the trend is upward, downward, or in a range. It also provides real-time updates on the latest price and trend, with optional sound alerts for different trend types.
+The Cryptocurrency Trend Monitor is a web-based script that fetches OHLCV (Open, High, Low, Close, Volume) data from the Binance API and analyzes the trend of a specified cryptocurrency pair. It calculates moving averages, detects the trend as upward, downward, or in a range, and provides real-time updates on the latest price and trend. Optional sound alerts are available for different trend types. Additionally, the script calculates Fibonacci levels based on the high and low prices.
 
 ## Features
 
 - Fetches OHLCV data for a specified cryptocurrency pair from the Binance API.
 - Calculates moving averages for different periods to analyze the trend.
 - Detects whether the trend is upward, downward, or in a range.
+- Calculates Fibonacci levels based on the high and low prices.
 - Displays the latest price and time of the cryptocurrency pair.
 - Provides optional sound alerts for different trend types: upward trend, downward trend, and range.
 
@@ -29,6 +30,8 @@ The Cryptocurrency Trend Monitor is a web-based script that fetches OHLCV (Open,
    - Range: Plays the `range.mp3` sound file.
 
 6. The script will continue monitoring the trend every minute (adjustable via the `setInterval` function in the script) and update the information accordingly.
+
+7. Fibonacci levels are calculated based on the high and low prices of the fetched data. These levels are not displayed in the provided HTML element but can be accessed through the `calculateFibonacciLevels` function in the script.
 
 ## Requirements
 
