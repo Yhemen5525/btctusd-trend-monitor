@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Cryptocurrency Trend Monitor</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    #result {
+      margin-top: 20px;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      background-color: #f9f9f9;
+    }
+
+    p {
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Cryptocurrency Trend Monitor</h1>
+  <div id="result"></div>
+
+  <script>
+    const BASE_URL = 'https://api.binance.com/api/v3';
+    const KLINE_ENDPOINT = `${BASE_URL}/klines`;
+
+    const symbol = 'BTCTUSD';
+    const maPeriods = [7, 25, 99];
+
+    const BUY_SOUND_PATH = './buy.mp3';
+    const SELL_SOUND_PATH = './sell.mp3';
+    const RANGE_SOUND_PATH = './range.mp3';
+
+    function calculateMovingAverage(data, period) {
+      if (data.length >= period) {
+        const sum = data.slice(-period).reduce((acc, curr) => acc + curr, 0);
+        return sum / period;
+      } else {
+        return null;
+      }
+    }
+
+    function detectTrend(movingAverages) {
+      const increasing = movingAverages.every((value, index, array) => index === 0 || value > array[index - 1]);
+      const decreasing = movingAverages.every((value, index, array) => index === 0 || value < array[index - 1]);
+
+      if (increasing) {
+        return 'Upward trend';
+      } else if (decreasing) {
+        return 'Downward trend';
+      } else {
+        return 'Range';
+      }
+    }
+
+    function calculateFibonacciLevels(high, low) {
+      const levels = [];
+      const diff = high - low;
+
+      levels.push(high);
+      levels.push(low);
+
+      const ratios = [0.236, 0.382, 0.5, 0.618, 0.786];
+      for (const ratio of ratios) {
+        const level = high - (diff * ratio);
+        levels.push(level);
+      }
+
+      return levels;
+    }
+
+    async function fetchOHLCVData(symbol, interval, limit) {
+      const url = new URL(KLINE_ENDPOINT);
+      url.searchParams.append('symbol', symbol);
+      url.searchParams.append('interval', interval);
+      url.searchParams.append('limit', limit);
+
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Failed to fetch OHLCV data');
+      }
+
+      const data = await response.json();
+      return data;
+    }
+
+    function playSound(soundPath) {
+      const audio = new Audio(soundPath);
+      audio.play().catch(error => {
+        console.error('Failed to play sound:', error);
+      });
+    }
+
+    async function monitorMarket() {
+      try {
+        const data = await fetchOHLCVData(symbol, '1m', Math.max(...maPeriods));
+
+        const closingPrices = data.map(item => parseFloat(item[4]));
+        const movingAverages = maPeriods.map(period => calculateMovingAverage(closingPrices, period));
+
+        const trend = detectTrend(movingAverages);
+        const latestPrice = closingPrices[closingPrices.length - 1];
+        const latestTime = new Date(data[data.length - 1][0]).toLocaleString();
+
+        const resultDiv = document.getElementById('result');
+        resultDiv.innerHTML = `
+          <p>Currency Pair: ${symbol}</p>
+          <p>Latest Price: ${latestPrice} TUSD</p>
+          <p>Latest Time: ${latestTime}</p>
+          <p>Trend Detected: ${trend}</p>
+        `;
+
+        if (trend === 'Upward trend') {
+          playSound(BUY_SOUND_PATH);
+        } else if (trend === 'Downward trend') {
+          playSound(SELL_SOUND_PATH);
+        } else if (trend === 'Range') {
+          playSound(RANGE_SOUND_PATH);
+        }
+      } catch (error) {
+        console.error('An error occurred:', error.message);
+      }
+    }
+
+    setInterval(monitorMarket, 60000); // Run every 1 minute
+  </script>
+</body>
+</html>
