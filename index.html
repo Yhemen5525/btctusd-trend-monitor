@@ -80,14 +80,14 @@
     }
 
     function detectTrend(movingAverages) {
-  if (movingAverages.every((value, i, arr) => i === 0 || value < arr[i - 1])) {
-    return 'Upward trend';
-  } else if (movingAverages.every((value, i, arr) => i === 0 || value > arr[i - 1])) {
-    return 'Downward trend';
-  } else {
-    return 'Range';
-  }
-}
+      if (movingAverages.every((value, i, arr) => i === 0 || value < arr[i - 1])) {
+        return 'Upward trend';
+      } else if (movingAverages.every((value, i, arr) => i === 0 || value > arr[i - 1])) {
+        return 'Downward trend';
+      } else {
+        return 'Range';
+      }
+    }
 
     function calculateFibonacciLevels(high, low) {
       const levels = [];
@@ -162,6 +162,10 @@
         })
         .catch(error => {
           console.error('An error occurred:', error);
+          // Reload the page after 5 seconds in case of a network connection error
+          setTimeout(() => {
+            location.reload();
+          }, 5000);
         });
     }
 
