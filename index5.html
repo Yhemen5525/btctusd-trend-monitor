@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Cryptocurrency Market Monitor</title>
+  <style>
+    /* Add your CSS styles here */
+    body {
+      font-family: Arial, sans-serif;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .title {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .price {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+
+    .time {
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+
+    .trend {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+
+    .fibonacci {
+      font-size: 16px;
+      margin-top: 20px;
+    }
+
+    .fib-levels {
+      font-weight: bold;
+    }
+
+    .golden-level {
+      background-color: orange;
+      font-weight: bold;
+      color: white;
+    }
+
+    .timeframe {
+      margin-top: 20px;
+    }
+
+    .timeframe button {
+      margin-right: 10px;
+    }
+
+    .timeframe button.active {
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="title">Cryptocurrency Market Monitor</div>
+    <div class="price">Latest Price: <span id="latest-price"></span> TUSD</div>
+    <div class="time">Latest Time: <span id="latest-time"></span></div>
+    <div class="trend">Trend Detected: <span id="trend"></span></div>
+    <div class="fibonacci">
+      Fibonacci Retracement Levels:<br>
+      <span id="fib-levels"></span>
+    </div>
+    <div class="timeframe">
+      <button id="btn-1m">1 Minute</button>
+      <button id="btn-5m">5 Minutes</button>
+      <button id="btn-15m">15 Minutes</button>
+      <button id="btn-1h">1 Hour</button>
+      <button id="btn-1d">1 Day</button>
+      <button id="btn-1w">1 Week</button>
+    </div>
+  </div>
+
+  <script>
+    // Define the Binance API endpoints
+    const BASE_URL = 'https://api.binance.com/api/v3';
+    const KLINE_ENDPOINT = `${BASE_URL}/klines`;
+
+    // Define the Binance symbol
+    const symbol = 'BTCTUSD';
+
+    // Define the moving average periods
+    const maPeriods = [7, 25, 99];
+
+    // Define the audio files for different trends
+    const audioFiles = {
+      'Upward trend': './buy.mp3',
+      'Range': './range.mp3',
+      'Downward trend': './sell.mp3'
+    };
+
+    let selectedTimeframe = '1m'; // Default time frame is 1 minute
+
+    function updateTimeframe(timeframe) {
+      selectedTimeframe = timeframe;
+
+      // Remove the 'active' class from all buttons
+      const buttons = document.querySelectorAll('.timeframe button');
+      buttons.forEach(button => {
+        button.classList.remove('active');
+      });
+
+      // Add the 'active' class to the clicked button
+      const selectedButton = document.getElementById(`btn-${timeframe}`);
+      selectedButton.classList.add('active');
+
+      // Update the market data immediately when the time frame changes
+      updateMarketData();
+    }
+
+    // Add event listeners to the buttons
+    document.getElementById('btn-1m').addEventListener('click', () => updateTimeframe('1m'));
+    document.getElementById('btn-5m').addEventListener('click', () => updateTimeframe('5m'));
+    document.getElementById('btn-15m').addEventListener('click', () => updateTimeframe('15m'));
+    document.getElementById('btn-1h').addEventListener('click', () => updateTimeframe('1h'));
+    document.getElementById('btn-1d').addEventListener('click', () => updateTimeframe('1d'));
+    document.getElementById('btn-1w').addEventListener('click', () => updateTimeframe('1w'));
+
+    function calculateMovingAverage(data, period) {
+      if (data.length >= period) {
+        return data.slice(-period).reduce((sum, value) => sum + value, 0) / period;
+      } else {
+        return null;
+      }
+    }
+
+    function detectTrend(movingAverages) {
+      if (movingAverages.every((value, i, arr) => i === 0 || value < arr[i - 1])) {
+        return 'Upward trend';
+      } else if (movingAverages.every((value, i, arr) => i === 0 || value > arr[i - 1])) {
+        return 'Downward trend';
+      } else {
+        return 'Range';
+      }
+    }
+
+    function calculateFibonacciLevels(high, low) {
+      const levels = [];
+
+      const diff = high - low;
+
+      const ratios = [0.236, 0.382, 0.5, 0.618, 0.786];
+      for (const ratio of ratios) {
+        const level = high - (diff * ratio);
+        levels.push(level);
+      }
+
+      levels.push(high);
+      levels.push(low);
+
+      return levels.sort((a, b) => a - b);
+    }
+
+    async function fetchOHLCVData(symbol, interval, limit) {
+      const url = `${KLINE_ENDPOINT}?symbol=${symbol}&interval=${interval}&limit=${limit}`;
+      const response = await fetch(url);
+      const data = await response.json();
+      return data;
+    }
+
+    function updateMarketData() {
+      fetchOHLCVData(symbol, selectedTimeframe, Math.max(...maPeriods))
+        .then(data => {
+          // Extract closing prices
+          const closingPrices = data.map(item => parseFloat(item[4]));
+
+          // Calculate moving averages
+          const movingAverages = maPeriods.map(period => calculateMovingAverage(closingPrices, period));
+
+          // Detect trend
+          const trend = detectTrend(movingAverages);
+
+          // Get the latest price and time
+          const latestPrice = closingPrices[closingPrices.length - 1].toFixed(2);
+          const latestTime = new Date(data[data.length - 1][0]).toLocaleString();
+
+          // Update the HTML elements
+          document.getElementById('latest-price').textContent = latestPrice;
+          document.getElementById('latest-time').textContent = latestTime;
+          document.getElementById('trend').textContent = trend;
+
+          // Play sound based on trend
+          if (trend in audioFiles) {
+            const audio = new Audio(audioFiles[trend]);
+            audio.play();
+          }
+
+          // Calculate Fibonacci retracement levels for upward, downward, or ranging trends
+          const high = Math.max(...closingPrices);
+          const low = Math.min(...closingPrices);
+          const fibonacciLevels = calculateFibonacciLevels(high, low);
+
+          let html = '';
+          for (let i = 0; i < fibonacciLevels.length; i++) {
+            const level = fibonacciLevels[i].toFixed(2);
+            const className = (i === 2 || i === 3) ? 'golden-level' : '';
+            html += `<span class="${className}">Level ${i + 1}: ${level}</span>`;
+            if ((trend === 'Upward trend' && i === 2) || (trend === 'Downward trend' && i === 3)) {
+              html += ' (Potential reversal level)';
+            }
+            html += '<br>';
+          }
+
+          // Update the Fibonacci levels
+          document.getElementById('fib-levels').innerHTML = html;
+        })
+        .catch(error => {
+          console.error('Error:', error);
+        });
+    }
+
+    // Fetch and update the market data initially
+    updateMarketData();
+
+    // Update the market data every 10 seconds
+    setInterval(updateMarketData, 10000);
+  </script>
+</body>
+</html>
