@@ -66,8 +66,8 @@
 </head>
 <body>
   <div class="container">
-    <div class="title">PEPETUSD Cryptocurrency Market Monitor</div>
-    <div class="price">Latest Price: <span id="latest-price"></span> TUSD</div>
+    <div class="title">Cryptocurrency Market Monitor</div>
+    <div class="price">Latest Price: <span id="latest-price"></span> USDT</div>
     <div class="time">Latest Time: <span id="latest-time"></span></div>
     <div class="trend">Trend Detected: <span id="trend"></span></div>
     <div class="fibonacci">
@@ -82,7 +82,13 @@
       <button id="btn-1d">1 Day</button>
       <button id="btn-1w">1 Week</button>
     </div>
+    
+    <!-- Add the mute/unmute button -->
+   <div class="mute-button">
+     <button id="mute-button">Mute</button>
+   </div>
   </div>
+
 
   <script>
     // Define the Binance API endpoints
@@ -90,7 +96,7 @@
     const KLINE_ENDPOINT = `${BASE_URL}/klines`;
 
     // Define the Binance symbol
-    const symbol = 'PEPETUSD';
+    const symbol = 'BTCUSDT';
 
     // Define the moving average periods
     const maPeriods = [7, 25, 99];
@@ -184,7 +190,7 @@
           const trend = detectTrend(movingAverages);
 
           // Get the latest price and time
-          const latestPrice = closingPrices[closingPrices.length - 1].toFixed(8);
+          const latestPrice = closingPrices[closingPrices.length - 1].toFixed(2);
           const latestTime = new Date(data[data.length - 1][0]).toLocaleString();
 
           // Update the HTML elements
@@ -205,7 +211,7 @@
 
           let html = '';
           for (let i = 0; i < fibonacciLevels.length; i++) {
-            const level = fibonacciLevels[i].toFixed(8);
+            const level = fibonacciLevels[i].toFixed(2);
             const className = (i === 2 || i === 3) ? 'golden-level' : '';
             html += `<span class="${className}">Level ${i + 1}: ${level}</span>`;
             if ((trend === 'Upward trend' && i === 2) || (trend === 'Downward trend' && i === 3)) {
@@ -227,6 +233,32 @@
 
     // Update the market data every 10 seconds
     setInterval(updateMarketData, 10000);
+  </script>
+
+  <!-- mute button -->
+    <script>
+    
+
+    // Get a reference to the mute button
+    const muteButton = document.getElementById('mute-button');
+
+    // Create a variable to track the mute state
+    let isMuted = false;
+
+    // Function to toggle audio mute state
+    function toggleMute() {
+      isMuted = !isMuted;
+
+      // Update the button text based on the mute state
+      if (isMuted) {
+        muteButton.textContent = 'Unmute';
+      } else {
+        muteButton.textContent = 'Mute';
+      }
+    }
+
+    // Add an event listener to the mute button
+    muteButton.addEventListener('click', toggleMute);
   </script>
 </body>
 </html>
