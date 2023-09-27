@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -81,14 +80,14 @@
       <button id="btn-1h">1 Hour</button>
       <button id="btn-1d">1 Day</button>
       <button id="btn-1w">1 Week</button>
+      
     </div>
+  <!-- Add this button below the Fibonacci Retracement Levels section -->
+<div class="mute-button">
+  <button id="mute-audio">Mute / Unmute Audio</button>
+</div>
     
-    <!-- Add the mute/unmute button -->
-   <div class="mute-button">
-     <button id="mute-button">Mute</button>
-   </div>
   </div>
-
 
   <script>
     // Define the Binance API endpoints
@@ -234,31 +233,27 @@
     // Update the market data every 10 seconds
     setInterval(updateMarketData, 10000);
   </script>
+  <!-- Add this JavaScript code for mute/unmute functionality -->
+<script>
+  let isAudioMuted = false; // Initially, audio is unmuted
 
-  <!-- mute button -->
-    <script>
-    
+  // Function to toggle audio mute/unmute
+  function toggleAudioMute() {
+    isAudioMuted = !isAudioMuted;
 
-    // Get a reference to the mute button
-    const muteButton = document.getElementById('mute-button');
+    // Update the button text based on mute/unmute state
+    const muteButton = document.getElementById('mute-audio');
+    muteButton.textContent = isAudioMuted ? 'Unmute Audio' : 'Mute Audio';
 
-    // Create a variable to track the mute state
-    let isMuted = false;
-
-    // Function to toggle audio mute state
-    function toggleMute() {
-      isMuted = !isMuted;
-
-      // Update the button text based on the mute state
-      if (isMuted) {
-        muteButton.textContent = 'Unmute';
-      } else {
-        muteButton.textContent = 'Mute';
-      }
+    // Pause all audio elements if audio is muted
+    if (isAudioMuted) {
+      const audioElements = document.querySelectorAll('audio');
+      audioElements.forEach(audio => audio.pause());
     }
+  }
 
-    // Add an event listener to the mute button
-    muteButton.addEventListener('click', toggleMute);
-  </script>
+  // Add an event listener to the mute/unmute button
+  document.getElementById('mute-audio').addEventListener('click', toggleAudioMute);
+</script>
 </body>
 </html>
