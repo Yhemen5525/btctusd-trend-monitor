@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -66,6 +67,13 @@
 <body>
   <div class="container">
     <div class="title">Cryptocurrency Market Monitor</div>
+    <!-- Add this input field for users to input their preferred symbol -->
+<div>
+  <label for="symbol-input">Enter Symbol:</label>
+  <input type="text" id="symbol-input" placeholder="Enter symbol">
+  <button id="update-symbol-btn">Update Symbol</button>
+</div>
+    
     <div class="price">Latest Price: <span id="latest-price"></span> USDT</div>
     <div class="time">Latest Time: <span id="latest-time"></span></div>
     <div class="trend">Trend Detected: <span id="trend"></span></div>
@@ -89,7 +97,7 @@
     const KLINE_ENDPOINT = `${BASE_URL}/klines`;
 
     // Define the Binance symbol
-    const symbol = 'BTCUSDT';
+    let symbol = 'BTCUSDT';
 
     // Define the moving average periods
     const maPeriods = [7, 25, 99];
@@ -226,6 +234,22 @@
 
     // Update the market data every 10 seconds
     setInterval(updateMarketData, 10000);
+  </script>
+  <script>
+    // Define the Binance symbol
+//let symbol = 'BTCUSDT'; // Default symbol is BTCUSDT
+
+// Function to update symbol
+function updateSymbol() {
+  const newSymbol = document.getElementById('symbol-input').value.toUpperCase(); // Get user input and convert to uppercase
+  if (newSymbol !== '') {
+    symbol = newSymbol;
+    updateMarketData(); // Trigger update when symbol is changed
+  }
+}
+
+// Add event listener to the update symbol button
+document.getElementById('update-symbol-btn').addEventListener('click', updateSymbol);
   </script>
 </body>
 </html>
